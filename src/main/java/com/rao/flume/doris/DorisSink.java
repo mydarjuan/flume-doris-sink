@@ -6,8 +6,6 @@ import org.apache.flume.sink.AbstractSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-
 /**
  * @author raoshihong
  * @date 2021-09-05 09:27
