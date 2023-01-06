@@ -39,15 +39,14 @@ public class DorisSink extends AbstractSink implements Configurable {
         password = context.getString("password", "");
         database = context.getString("database");
         table = context.getString("table");
-        mergeType = context.getString("mergeType", "APPEND");
-        separator = context.getString("separator", ",");
+        mergeType = context.getString("mergeType");
+        separator = context.getString("separator");
         columns = context.getString("columns", "");
         format = context.getString("format", "");
         jsonPaths = context.getString("jsonPaths", "");
         where = context.getString("where", "");
 
-        logger.info(String.format("配置信息-> " + "host:%s," + "port:%s," + "user:%s," + "db:%s," + "table:%s," + "mergeType:%s," + "separator:%s," + "columns:%s," + "format:%s," + "jsonpaths:%s," + "where:%s", host, port, user, database, table, mergeType, separator, columns, format, jsonPaths, where));
-
+        System.out.printf("配置信息-> " + "host:%s," + "port:%s," + "user:%s," + "db:%s," + "table:%s," + "mergeType:%s," + "separator:%s," + "columns:%s," + "format:%s," + "jsonpaths:%s," + "where:%s%n", host, port, user, database, table, mergeType, separator, columns, format, jsonPaths, where);
     }
 
     /**
@@ -73,11 +72,11 @@ public class DorisSink extends AbstractSink implements Configurable {
 
         try {
             String body = new String(event.getBody());
-            logger.info("采集内容:{}", body);
             new DorisStreamLoad().sendData(body, host, port, user, password, database, table, mergeType, separator, columns, format, jsonPaths, where);
             txn.commit();
             return Status.READY;
         } catch (Throwable th) {
+            System.out.println("异常信息:" + th.getMessage());
             txn.rollback();
             if (th instanceof Error) {
                 throw (Error) th;

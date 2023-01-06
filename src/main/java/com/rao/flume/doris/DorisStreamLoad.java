@@ -47,7 +47,9 @@ public class DorisStreamLoad {
             put.setHeader("merge_type", mergeType);
         }
         put.setHeader("label", UUID.randomUUID().toString() + System.currentTimeMillis());
-        put.setHeader("column_separator", separator);
+        if (StringUtils.isNotEmpty(separator)) {
+            put.setHeader("column_separator", separator);
+        }
         if (StringUtils.isNotEmpty(columns)) {
             put.setHeader("columns", columns);
         }
