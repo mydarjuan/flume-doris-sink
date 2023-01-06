@@ -25,6 +25,7 @@ a1.sinks.k1.database = db_log
 a1.sinks.k1.table = error_log
 a1.sinks.k1.mergeType = APPEND
 a1.sinks.k1.separator = ,
+a1.sinks.k1.separator = columns
 a1.sinks.k1.format = 
 a1.sinks.k1.jsonPaths = 
 a1.sinks.k1.where = 
