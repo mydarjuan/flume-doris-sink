@@ -13,78 +13,81 @@ import java.util.Map;
  * @date 2021-09-05 09:27
  */
 public class DorisSink extends AbstractSink implements Configurable {
-
-
     private Logger logger = LoggerFactory.getLogger(DorisSink.class);
 
-    private String prefix;
-    private String suffix;
+    private String host;
+    private int port;
+    private String user;
+    private String password;
+    private String database;
+    private String table;
+    private String mergeType;
+    private String separator;
+    private String columns;
+    private String format;
+    private String jsonPaths;
+    private String where;
 
     /**
      * 从配置文件中获取配置属性值
+     *
      * @param context
      */
     @Override
     public void configure(Context context) {
-        prefix = context.getString("prefix");
-        suffix = context.getString("suffix","_aaaa");
+        host = context.getString("host");
+        port = context.getInteger("port", 8030);
+        user = context.getString("user", "root");
+        password = context.getString("password", "");
+        database = context.getString("database");
+        table = context.getString("table");
+        mergeType = context.getString("mergeType", "APPEND");
+        separator = context.getString("separator", ",");
+        columns = context.getString("columns", "");
+        format = context.getString("format", "");
+        jsonPaths = context.getString("jsonPaths", "");
+        where = context.getString("where", "");
+
+        logger.info(String.format("配置信息-> " + "host:%s," + "port:%s," + "user:%s," + "db:%s," + "table:%s," + "mergeType:%s," + "separator:%s," + "columns:%s," + "format:%s," + "jsonpaths:%s," + "where:%s", host, port, user, database, table, mergeType, separator, columns, format, jsonPaths, where));
+
     }
 
     /**
      * 这个方法会被反复的调用
      * 在这里可以通过channel获取event,然后将event输出到控制台或者kafka或者hdfs进行存储
+     *
      * @return
      * @throws EventDeliveryException
      */
     @Override
     public Status process() throws EventDeliveryException {
-        Status status = null;
-        //1.获取channel
-        Channel channel = getChannel();
+        Channel ch = getChannel();
+        Transaction txn = ch.getTransaction();
+        Event event = null;
+        txn.begin();
 
-        //2.通过channel获取事务对象
-        Transaction takeTransaction = channel.getTransaction();
-
-        //3.开启take事务
-        takeTransaction.begin();
-
-        try {
-            Event event = null;
-            //4.从channel中获取event
-            while (true){
-                event = channel.take();
-                if (event!=null) {
-                    break;
-                }
+        while (true) {
+            event = ch.take();
+            if (event != null) {
+                break;
             }
-
-            Map<String, String> headers = event.getHeaders();
-            logger.info("headers:{}",headers);
-
-            //5.业务处理
-            logger.info(prefix+"___"+new String(event.getBody()) + suffix);
-
-            // 在这里进行curl 命令
-            new DorisStreamLoad().sendData(new String(event.getBody()),"any_report","site_visit");
-
-
-            //6.提交事务
-            takeTransaction.commit();
-
-            //7.设置状态
-            status = Status.READY;
-        }catch (Exception e){
-            e.printStackTrace();
-            //发生异常,则进行事务回滚
-            takeTransaction.rollback();
-            status = Status.BACKOFF;
-        }finally {
-            //关闭事务
-            takeTransaction.close();
         }
 
-        return status;
+        try {
+            String body = new String(event.getBody());
+            logger.info("采集内容:{}", body);
+            new DorisStreamLoad().sendData(body, host, port, user, password, database, table, mergeType, separator, columns, format, jsonPaths, where);
+            txn.commit();
+            return Status.READY;
+        } catch (Throwable th) {
+            txn.rollback();
+            if (th instanceof Error) {
+                throw (Error) th;
+            } else {
+                throw new EventDeliveryException(th);
+            }
+        } finally {
+            txn.close();
+        }
     }
-
-
 }
