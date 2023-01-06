@@ -26,8 +26,6 @@ public class DorisStreamLoad {
 
     public void sendData(String content, String host, int port, String user, String pwd, String db, String table, String mergeType, String separator, String columns, String format, String jsonPaths, String where) throws Exception {
 
-        logger.info(String.format("配置信息-> " + "host:%s," + "port:%s," + "user:%s," + "db:%s," + "table:%s," + "mergeType:%s," + "separator:%s," + "columns:%s," + "format:%s," + "jsonpaths:%s," + "where:%s", host, port, user, db, table, mergeType, separator, columns, format, jsonPaths, where));
-
         final String loadUrl = String.format("http://%s:%s/api/%s/%s/_stream_load", host, port, db, table);
 
         final HttpClientBuilder httpClientBuilder = HttpClients.custom().setRedirectStrategy(new DefaultRedirectStrategy() {
