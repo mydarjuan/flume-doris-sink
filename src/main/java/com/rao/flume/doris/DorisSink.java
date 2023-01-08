@@ -4,6 +4,8 @@ import org.apache.flume.*;
 import org.apache.flume.conf.Configurable;
 import org.apache.flume.sink.AbstractSink;
 
+import java.util.List;
+
 /**
  * @author raoshihong
  * @date 2021-09-05 09:27
@@ -26,10 +28,6 @@ public class DorisSink extends AbstractSink implements Configurable {
         do {
             event = ch.take();
         } while (event == null);
-
-        //todo 异步定时线程
-
-        //todo 攒批执行
 
         try {
             DorisStreamLoad.sink(new String(event.getBody()), context);
