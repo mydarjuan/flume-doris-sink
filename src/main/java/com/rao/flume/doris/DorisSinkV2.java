@@ -39,15 +39,17 @@ public class DorisSinkV2 extends AbstractSink implements Configurable {
                 if (event != null) {
                     batchBuilder.append(new String(event.getBody())).append("\n");
                     ++count;
-
+                    // 攒批 batchSize 时提交
                     if (count == this.batchSize) {
-                        batchBuilder.deleteCharAt(batchBuilder.length() - 1);
-                        DorisStreamLoad.sink(batchBuilder.toString(), context);
-                        batchBuilder.setLength(0);
+                        flush();
                         count = 0;
                     }
-
                     continue;
+                }
+
+                // 攒批不满 batchSize 时提交
+                if (batchBuilder.length() > 1) {
+                    flush();
                 }
 
                 transaction.commit();
@@ -61,6 +63,12 @@ public class DorisSinkV2 extends AbstractSink implements Configurable {
         } finally {
             transaction.close();
         }
+    }
+
+    private void flush() throws Exception {
+        batchBuilder.deleteCharAt(batchBuilder.length() - 1);
+        DorisStreamLoad.sink(batchBuilder.toString(), this.context);
+        batchBuilder.setLength(0);
     }
 
     @Override
