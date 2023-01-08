@@ -7,6 +7,7 @@ import org.apache.flume.sink.AbstractSink;
 /**
  * @author liujianbo
  * @date 2023-01-08
+ * 支持多fe节点, 支持批量采集
  */
 public class DorisSinkV2 extends AbstractSink implements Configurable {
     private int batchSize;
