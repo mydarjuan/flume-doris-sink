@@ -6,6 +6,16 @@ import org.apache.flume.sink.AbstractSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+
 /**
  * @author raoshihong
  * @date 2021-09-05 09:27
@@ -13,7 +23,7 @@ import org.slf4j.LoggerFactory;
 public class DorisSink extends AbstractSink implements Configurable {
     private Logger logger = LoggerFactory.getLogger(DorisSink.class);
 
-    private String host;
+    private String hosts;
     private int port;
     private String user;
     private String password;
@@ -33,7 +43,7 @@ public class DorisSink extends AbstractSink implements Configurable {
      */
     @Override
     public void configure(Context context) {
-        host = context.getString("host");
+        hosts = context.getString("hosts");
         port = context.getInteger("port", 8030);
         user = context.getString("user", "root");
         password = context.getString("password", "");
@@ -46,7 +56,30 @@ public class DorisSink extends AbstractSink implements Configurable {
         jsonPaths = context.getString("jsonPaths", "");
         where = context.getString("where", "");
 
-        System.out.printf("配置信息-> " + "host:%s," + "port:%s," + "user:%s," + "db:%s," + "table:%s," + "mergeType:%s," + "separator:%s," + "columns:%s," + "format:%s," + "jsonpaths:%s," + "where:%s%n", host, port, user, database, table, mergeType, separator, columns, format, jsonPaths, where);
+        System.out.printf("配置信息-> " + "host:%s," + "port:%s," + "user:%s," + "db:%s," + "table:%s," + "mergeType:%s," + "separator:%s," + "columns:%s," + "format:%s," + "jsonpaths:%s," + "where:%s%n", hosts, port, user, database, table, mergeType, separator, columns, format, jsonPaths, where);
+    }
+
+    private boolean checkConnection(String host) {
+        try {
+            URL url = new URL(host);
+            HttpURLConnection co = (HttpURLConnection) url.openConnection();
+            co.setConnectTimeout(5000);
+            co.connect();
+            co.disconnect();
+            return true;
+        } catch (Exception e1) {
+            e1.printStackTrace();
+            return false;
+        }
+    }
+
+    private String getLoadHost() {
+        String[] hostList = hosts.split(",");
+        String host = "http://" + hostList[new Random().nextInt(hostList.length)] + ":" + port;
+        if (checkConnection(host)) {
+            return host;
+        }
+        return null;
     }
 
     /**
@@ -70,9 +103,12 @@ public class DorisSink extends AbstractSink implements Configurable {
             }
         }
 
+        //todo 攒批执行
+
         try {
+            String host = getLoadHost();
             String body = new String(event.getBody());
-            new DorisStreamLoad().sendData(body, host, port, user, password, database, table, mergeType, separator, columns, format, jsonPaths, where);
+            new DorisStreamLoad().sendData(body, host, user, password, database, table, mergeType, separator, columns, format, jsonPaths, where);
             txn.commit();
             return Status.READY;
         } catch (Throwable th) {

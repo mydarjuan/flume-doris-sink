@@ -5,6 +5,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultRedirectStrategy;
@@ -22,11 +23,10 @@ import java.util.UUID;
  * @date 2021-09-05 16:33
  */
 public class DorisStreamLoad {
-    public static Logger logger = LoggerFactory.getLogger(DorisStreamLoad.class);
 
-    public void sendData(String content, String host, int port, String user, String pwd, String db, String table, String mergeType, String separator, String columns, String format, String jsonPaths, String where) throws Exception {
+    public void sendData(String data, String host, String user, String pwd, String db, String table, String mergeType, String separator, String columns, String format, String jsonPaths, String where) throws Exception {
 
-        final String loadUrl = String.format("http://%s:%s/api/%s/%s/_stream_load", host, port, db, table);
+        final String loadUrl = String.format("%s/api/%s/%s/_stream_load", host, db, table);
 
         final HttpClientBuilder httpClientBuilder = HttpClients.custom().setRedirectStrategy(new DefaultRedirectStrategy() {
             @Override
@@ -34,13 +34,14 @@ public class DorisStreamLoad {
                 return true;
             }
         });
-        HttpPut put = builderHttpEntity(loadUrl, content, user, pwd, mergeType, separator, columns, format, jsonPaths, where);
-        callDorisStreamLoad(httpClientBuilder.build(), put);
+
+        HttpPut put = builderEntity(loadUrl, data, user, pwd, mergeType, separator, columns, format, jsonPaths, where);
+
+        put(httpClientBuilder.build(), put);
     }
 
-    private HttpPut builderHttpEntity(String loadUrl, String content, String user, String pwd, String mergeType, String separator, String columns, String format, String jsonPaths, String where) {
+    private HttpPut builderEntity(String loadUrl, String data, String user, String pwd, String mergeType, String separator, String columns, String format, String jsonPaths, String where) {
         HttpPut put = new HttpPut(loadUrl);
-        StringEntity entity = new StringEntity(content, "UTF-8");
         put.setHeader(HttpHeaders.EXPECT, "100-continue");
         put.setHeader(HttpHeaders.AUTHORIZATION, basicAuthHeader(user, pwd));
         if (StringUtils.isNotEmpty(mergeType)) {
@@ -60,29 +61,28 @@ public class DorisStreamLoad {
         if (StringUtils.isNotEmpty(where)) {
             put.setHeader("where", where);
         }
+        StringEntity entity = new StringEntity(data, "UTF-8");
         put.setEntity(entity);
 
         return put;
     }
 
-    private void callDorisStreamLoad(CloseableHttpClient client, HttpPut put) throws Exception {
+    private void put(CloseableHttpClient client, HttpPut put) throws Exception {
         String loadResult = "";
         CloseableHttpResponse response = client.execute(put);
         if (response.getEntity() != null) {
-
             loadResult = EntityUtils.toString(response.getEntity());
         }
         final int statusCode = response.getStatusLine().getStatusCode();
         if (statusCode != 200) {
-            System.out.println("写入失败");
+            throw new Exception("通信异常,任务失败，当前时间: " + System.currentTimeMillis());
+        }
+        if (loadResult.contains("OK") && loadResult.contains("Success")) {
+            System.out.println(loadResult);
+        } else if (loadResult.contains("Fail")) {
+            throw new Exception(loadResult + ",抛出异常,任务失败，当前时间: " + System.currentTimeMillis());
         } else {
-            if (loadResult.contains("OK") && loadResult.contains("Success")) {
-                System.out.println(loadResult);
-            } else if (loadResult.contains("Fail")) {
-                throw new Exception(loadResult + ",抛出异常,任务失败，当前时间: " + System.currentTimeMillis());
-            } else {
-                throw new Exception(loadResult + ",抛出异常,任务失败，当前时间: " + System.currentTimeMillis());
-            }
+            throw new Exception(loadResult + ",抛出异常,任务失败，当前时间: " + System.currentTimeMillis());
         }
     }
 
