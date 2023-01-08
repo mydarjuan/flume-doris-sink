@@ -3,112 +3,36 @@ package com.rao.flume.doris;
 import org.apache.flume.*;
 import org.apache.flume.conf.Configurable;
 import org.apache.flume.sink.AbstractSink;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
 
 /**
  * @author raoshihong
  * @date 2021-09-05 09:27
  */
 public class DorisSink extends AbstractSink implements Configurable {
-    private Logger logger = LoggerFactory.getLogger(DorisSink.class);
+    private Context context;
 
-    private String hosts;
-    private int port;
-    private String user;
-    private String password;
-    private String database;
-    private String table;
-    private String mergeType;
-    private String separator;
-    private String columns;
-    private String format;
-    private String jsonPaths;
-    private String where;
-
-    /**
-     * 从配置文件中获取配置属性值
-     *
-     * @param context
-     */
     @Override
     public void configure(Context context) {
-        hosts = context.getString("hosts");
-        port = context.getInteger("port", 8030);
-        user = context.getString("user", "root");
-        password = context.getString("password", "");
-        database = context.getString("database");
-        table = context.getString("table");
-        mergeType = context.getString("mergeType");
-        separator = context.getString("separator");
-        columns = context.getString("columns", "");
-        format = context.getString("format", "");
-        jsonPaths = context.getString("jsonPaths", "");
-        where = context.getString("where", "");
-
-        System.out.printf("配置信息-> " + "host:%s," + "port:%s," + "user:%s," + "db:%s," + "table:%s," + "mergeType:%s," + "separator:%s," + "columns:%s," + "format:%s," + "jsonpaths:%s," + "where:%s%n", hosts, port, user, database, table, mergeType, separator, columns, format, jsonPaths, where);
+        this.context = context;
     }
 
-    private boolean checkConnection(String host) {
-        try {
-            URL url = new URL(host);
-            HttpURLConnection co = (HttpURLConnection) url.openConnection();
-            co.setConnectTimeout(5000);
-            co.connect();
-            co.disconnect();
-            return true;
-        } catch (Exception e1) {
-            e1.printStackTrace();
-            return false;
-        }
-    }
-
-    private String getLoadHost() {
-        String[] hostList = hosts.split(",");
-        String host = "http://" + hostList[new Random().nextInt(hostList.length)] + ":" + port;
-        if (checkConnection(host)) {
-            return host;
-        }
-        return null;
-    }
-
-    /**
-     * 这个方法会被反复的调用
-     * 在这里可以通过channel获取event,然后将event输出到控制台或者kafka或者hdfs进行存储
-     *
-     * @return
-     * @throws EventDeliveryException
-     */
     @Override
     public Status process() throws EventDeliveryException {
         Channel ch = getChannel();
         Transaction txn = ch.getTransaction();
-        Event event = null;
+        Event event;
         txn.begin();
 
-        while (true) {
+        do {
             event = ch.take();
-            if (event != null) {
-                break;
-            }
-        }
+        } while (event == null);
+
+        //todo 异步定时线程
 
         //todo 攒批执行
 
         try {
-            String host = getLoadHost();
-            String body = new String(event.getBody());
-            new DorisStreamLoad().sendData(body, host, user, password, database, table, mergeType, separator, columns, format, jsonPaths, where);
+            DorisStreamLoad.sink(new String(event.getBody()), context);
             txn.commit();
             return Status.READY;
         } catch (Throwable th) {

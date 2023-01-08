@@ -2,6 +2,7 @@ package com.rao.flume.doris;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
+import org.apache.flume.Context;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPut;
@@ -15,7 +16,10 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Random;
 import java.util.UUID;
 
 /**
@@ -24,9 +28,44 @@ import java.util.UUID;
  */
 public class DorisStreamLoad {
 
-    public void sendData(String data, String host, String user, String pwd, String db, String table, String mergeType, String separator, String columns, String format, String jsonPaths, String where) throws Exception {
+    private static boolean checkConnection(String host) {
+        try {
+            URL url = new URL(host);
+            HttpURLConnection co = (HttpURLConnection) url.openConnection();
+            co.setConnectTimeout(5000);
+            co.connect();
+            co.disconnect();
+            return true;
+        } catch (Exception e1) {
+            e1.printStackTrace();
+            return false;
+        }
+    }
 
-        final String loadUrl = String.format("%s/api/%s/%s/_stream_load", host, db, table);
+    private static String getLoadHost(Context context) {
+        String[] hostList = context.getString("hosts").split(",");
+        String host = "http://" + hostList[new Random().nextInt(hostList.length)] + ":" + context.getInteger("port", 8030);
+        if (checkConnection(host)) {
+            return host;
+        }
+        return null;
+    }
+
+    public static void sink(String data, Context context) throws Exception {
+
+        String host = getLoadHost(context);
+        String user = context.getString("user", "root");
+        String password = context.getString("password", "");
+        String database = context.getString("database");
+        String table = context.getString("table");
+        String mergeType = context.getString("mergeType");
+        String separator = context.getString("separator");
+        String columns = context.getString("columns", "");
+        String format = context.getString("format", "");
+        String jsonPaths = context.getString("jsonPaths", "");
+        String where = context.getString("where", "");
+
+        final String loadUrl = String.format("%s/api/%s/%s/_stream_load", host, database, table);
 
         final HttpClientBuilder httpClientBuilder = HttpClients.custom().setRedirectStrategy(new DefaultRedirectStrategy() {
             @Override
@@ -35,12 +74,12 @@ public class DorisStreamLoad {
             }
         });
 
-        HttpPut put = builderEntity(loadUrl, data, user, pwd, mergeType, separator, columns, format, jsonPaths, where);
+        HttpPut put = builderEntity(loadUrl, data, user, password, mergeType, separator, columns, format, jsonPaths, where);
 
-        put(httpClientBuilder.build(), put);
+        loadData(loadUrl, httpClientBuilder.build(), put);
     }
 
-    private HttpPut builderEntity(String loadUrl, String data, String user, String pwd, String mergeType, String separator, String columns, String format, String jsonPaths, String where) {
+    private static HttpPut builderEntity(String loadUrl, String data, String user, String pwd, String mergeType, String separator, String columns, String format, String jsonPaths, String where) {
         HttpPut put = new HttpPut(loadUrl);
         put.setHeader(HttpHeaders.EXPECT, "100-continue");
         put.setHeader(HttpHeaders.AUTHORIZATION, basicAuthHeader(user, pwd));
@@ -67,7 +106,7 @@ public class DorisStreamLoad {
         return put;
     }
 
-    private void put(CloseableHttpClient client, HttpPut put) throws Exception {
+    private static void loadData(String loadUrl, CloseableHttpClient client, HttpPut put) throws Exception {
         String loadResult = "";
         CloseableHttpResponse response = client.execute(put);
         if (response.getEntity() != null) {
@@ -78,7 +117,7 @@ public class DorisStreamLoad {
             throw new Exception("通信异常,任务失败，当前时间: " + System.currentTimeMillis());
         }
         if (loadResult.contains("OK") && loadResult.contains("Success")) {
-            System.out.println(loadResult);
+            System.out.println(loadUrl + "\n" + loadResult);
         } else if (loadResult.contains("Fail")) {
             throw new Exception(loadResult + ",抛出异常,任务失败，当前时间: " + System.currentTimeMillis());
         } else {
@@ -86,7 +125,7 @@ public class DorisStreamLoad {
         }
     }
 
-    private String basicAuthHeader(String username, String password) {
+    private static String basicAuthHeader(String username, String password) {
         final String tobeEncode = username + ":" + password;
         byte[] encoded = Base64.encodeBase64(tobeEncode.getBytes(StandardCharsets.UTF_8));
         return "Basic " + new String(encoded);
