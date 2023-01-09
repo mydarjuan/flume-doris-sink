@@ -1,16 +1,15 @@
-package com.rao.flume.doris;
+package com.darjuan.flume.doris;
 
 import org.apache.flume.*;
 import org.apache.flume.conf.Configurable;
 import org.apache.flume.sink.AbstractSink;
 
-import java.util.List;
-
 /**
- * @author raoshihong
- * @date 2021-09-05 09:27
+ * @author liujianbo
+ * @date 2023-01-08
+ * 支持多fe节点, 单个event采集
  */
-public class DorisSink extends AbstractSink implements Configurable {
+public class SingleSink extends AbstractSink implements Configurable {
     private Context context;
 
     @Override
@@ -30,7 +29,7 @@ public class DorisSink extends AbstractSink implements Configurable {
         } while (event == null);
 
         try {
-            DorisStreamLoad.sink(new String(event.getBody()), context);
+            StreamLoad.sink(new String(event.getBody()), context);
             txn.commit();
             return Status.READY;
         } catch (Throwable th) {

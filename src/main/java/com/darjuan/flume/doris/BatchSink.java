@@ -1,4 +1,4 @@
-package com.rao.flume.doris;
+package com.darjuan.flume.doris;
 
 import org.apache.flume.*;
 import org.apache.flume.conf.Configurable;
@@ -7,15 +7,15 @@ import org.apache.flume.sink.AbstractSink;
 /**
  * @author liujianbo
  * @date 2023-01-08
- * 支持多fe节点, 支持批量采集
+ * 支持多fe节点, 支持批量event采集
  */
-public class DorisSinkV2 extends AbstractSink implements Configurable {
+public class BatchSink extends AbstractSink implements Configurable {
     private int batchSize;
     private Context context;
     private StringBuilder batchBuilder = new StringBuilder();
     private int count = 0;
 
-    public DorisSinkV2() {
+    public BatchSink() {
     }
 
     @Override
@@ -24,6 +24,12 @@ public class DorisSinkV2 extends AbstractSink implements Configurable {
         this.batchSize = context.getInteger("batchSize", 10);
     }
 
+    /**
+     * 消息采集
+     *
+     * @return
+     * @throws EventDeliveryException
+     */
     @Override
     public Status process() throws EventDeliveryException {
         Status status = Status.READY;
@@ -66,9 +72,14 @@ public class DorisSinkV2 extends AbstractSink implements Configurable {
         }
     }
 
+    /**
+     * sink消息
+     *
+     * @throws Exception
+     */
     private void flush() throws Exception {
         batchBuilder.deleteCharAt(batchBuilder.length() - 1);
-        DorisStreamLoad.sink(batchBuilder.toString(), this.context);
+        StreamLoad.sink(batchBuilder.toString(), this.context);
         batchBuilder.setLength(0);
     }
 

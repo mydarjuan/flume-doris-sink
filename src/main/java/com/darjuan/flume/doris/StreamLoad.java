@@ -1,4 +1,4 @@
-package com.rao.flume.doris;
+package com.darjuan.flume.doris;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
@@ -22,12 +22,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.UUID;
 
-/**
- * @author raoshihong
- * @date 2021-09-05 16:33
- */
-public class DorisStreamLoad {
+public class StreamLoad {
 
+    /**
+     * 检查服务可用性
+     *
+     * @param host
+     * @return
+     */
     private static boolean checkConnection(String host) {
         try {
             URL url = new URL(host);
@@ -42,6 +44,12 @@ public class DorisStreamLoad {
         }
     }
 
+    /**
+     * 随机获取fe节点
+     *
+     * @param context
+     * @return
+     */
     private static String getLoadHost(Context context) {
         String[] hostList = context.getString("hosts").split(",");
         String host = "http://" + hostList[new Random().nextInt(hostList.length)] + ":" + context.getInteger("port", 8030);
@@ -51,6 +59,13 @@ public class DorisStreamLoad {
         return null;
     }
 
+    /**
+     * 同步消息
+     *
+     * @param data
+     * @param context
+     * @throws Exception
+     */
     public static void sink(String data, Context context) throws Exception {
 
         String host = getLoadHost(context);
@@ -79,6 +94,21 @@ public class DorisStreamLoad {
         loadData(loadUrl, httpClientBuilder.build(), put);
     }
 
+    /**
+     * 构建消息体
+     *
+     * @param loadUrl
+     * @param data
+     * @param user
+     * @param pwd
+     * @param mergeType
+     * @param separator
+     * @param columns
+     * @param format
+     * @param jsonPaths
+     * @param where
+     * @return
+     */
     private static HttpPut builderEntity(String loadUrl, String data, String user, String pwd, String mergeType, String separator, String columns, String format, String jsonPaths, String where) {
         HttpPut put = new HttpPut(loadUrl);
         put.setHeader(HttpHeaders.EXPECT, "100-continue");
@@ -106,6 +136,14 @@ public class DorisStreamLoad {
         return put;
     }
 
+    /**
+     * 导入doris
+     *
+     * @param loadUrl
+     * @param client
+     * @param put
+     * @throws Exception
+     */
     private static void loadData(String loadUrl, CloseableHttpClient client, HttpPut put) throws Exception {
         String loadResult = "";
         CloseableHttpResponse response = client.execute(put);
@@ -125,6 +163,13 @@ public class DorisStreamLoad {
         }
     }
 
+    /**
+     * 授权
+     *
+     * @param username
+     * @param password
+     * @return
+     */
     private static String basicAuthHeader(String username, String password) {
         final String tobeEncode = username + ":" + password;
         byte[] encoded = Base64.encodeBase64(tobeEncode.getBytes(StandardCharsets.UTF_8));
