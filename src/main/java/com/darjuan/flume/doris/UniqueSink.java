@@ -1,21 +1,24 @@
 package com.darjuan.flume.doris;
 
+import com.twmacinta.util.MD5;
 import org.apache.flume.*;
 import org.apache.flume.conf.Configurable;
 import org.apache.flume.sink.AbstractSink;
+
+import java.io.UnsupportedEncodingException;
 
 /**
  * @author liujianbo
  * @date 2023-01-08
  * 支持多fe节点, 支持批量event采集
  */
-public class BatchSink extends AbstractSink implements Configurable {
+public class UniqueSink extends AbstractSink implements Configurable {
     private int batchSize;
     private Context context;
     private StringBuilder batchBuilder = new StringBuilder();
     private int count = 0;
 
-    public BatchSink() {
+    public UniqueSink() {
     }
 
     @Override
@@ -43,7 +46,9 @@ public class BatchSink extends AbstractSink implements Configurable {
             while (true) {
                 event = channel.take();
                 if (event != null) {
-                    batchBuilder.append(new String(event.getBody())).append("\n");
+                    String msg = new String(event.getBody());
+                    String eventId = getEventId(msg);
+                    batchBuilder.append(msg).append(context.getString("separator")).append(eventId).append("\n");
                     ++count;
                     // 攒批 batchSize 时提交
                     if (count == this.batchSize) {
@@ -67,6 +72,12 @@ public class BatchSink extends AbstractSink implements Configurable {
         } finally {
             transaction.close();
         }
+    }
+
+    private String getEventId(String msg) throws UnsupportedEncodingException {
+        MD5 md5 = new MD5();
+        md5.Update(msg, null);
+        return md5.asHex();
     }
 
     /**
