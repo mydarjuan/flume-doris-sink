@@ -156,7 +156,6 @@ public class BatchSink extends AbstractSink implements Configurable, EventProces
         } else {
             batchBuilder.append(msg).append("\n");
         }
-
         ++batchCount;
     }
 }
