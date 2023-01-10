@@ -1,4 +1,4 @@
-package com.darjuan.flume.doris;
+package com.darjuan.flume.doris.service;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;

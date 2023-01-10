@@ -15,7 +15,7 @@ a1.sources.r1.fileHeader = true
 
 
 # Describe the sink
-a1.sinks.k1.type = com.darjuan.flume.doris.BatchSink
+a1.sinks.k1.type = com.darjuan.flume.doris.sinks.BatchSink
 a1.sinks.k1.hosts = 172.20.1.90,172.20.1.91
 a1.sinks.k1.port = 8030
 a1.sinks.k1.user = root

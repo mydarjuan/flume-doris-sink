@@ -1,5 +1,6 @@
-package com.darjuan.flume.doris;
+package com.darjuan.flume.doris.sinks;
 
+import com.darjuan.flume.doris.service.StreamLoad;
 import org.apache.flume.*;
 import org.apache.flume.conf.Configurable;
 import org.apache.flume.sink.AbstractSink;

@@ -1,19 +1,23 @@
-package com.darjuan.flume.doris;
+package com.darjuan.flume.doris.sinks;
 
+import com.darjuan.flume.doris.service.EventProcess;
+import com.darjuan.flume.doris.service.StreamLoad;
 import org.apache.flume.*;
 import org.apache.flume.conf.Configurable;
 import org.apache.flume.sink.AbstractSink;
+
+import java.io.UnsupportedEncodingException;
 
 /**
  * @author liujianbo
  * @date 2023-01-08
  * 支持多fe节点, 支持批量event采集
  */
-public class BatchSink extends AbstractSink implements Configurable {
-    private int batchSize;
-    private Context context;
-    private StringBuilder batchBuilder = new StringBuilder();
-    private int count = 0;
+public class BatchSink extends AbstractSink implements Configurable, EventProcess {
+    public int batchSize;
+    public Context context;
+    public StringBuilder batchBuilder = new StringBuilder();
+    public int count = 0;
 
     public BatchSink() {
     }
@@ -23,6 +27,7 @@ public class BatchSink extends AbstractSink implements Configurable {
         this.context = context;
         this.batchSize = context.getInteger("batchSize", 10);
     }
+
 
     /**
      * 消息采集
@@ -43,7 +48,9 @@ public class BatchSink extends AbstractSink implements Configurable {
             while (true) {
                 event = channel.take();
                 if (event != null) {
-                    batchBuilder.append(new String(event.getBody())).append("\n");
+
+                    eventAppend(event);
+
                     ++count;
                     // 攒批 batchSize 时提交
                     if (count == this.batchSize) {
@@ -88,5 +95,10 @@ public class BatchSink extends AbstractSink implements Configurable {
     @Override
     public void stop() {
         super.stop();
+    }
+
+    @Override
+    public void eventAppend(Event event) throws UnsupportedEncodingException {
+        batchBuilder.append(new String(event.getBody())).append("\n");
     }
 }
