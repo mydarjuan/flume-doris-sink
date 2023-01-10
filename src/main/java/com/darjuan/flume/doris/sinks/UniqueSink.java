@@ -1,6 +1,7 @@
 package com.darjuan.flume.doris.sinks;
 
 import com.twmacinta.util.MD5;
+import org.apache.commons.lang.StringUtils;
 import org.apache.flume.*;
 import org.apache.flume.conf.Configurable;
 
@@ -17,6 +18,9 @@ public class UniqueSink extends BatchSink implements Configurable {
     public void batchEvent(Event event) throws UnsupportedEncodingException {
         String msg = new String(event.getBody());
         String eventId = getEventId(msg);
+        if (StringUtils.isEmpty(msg)) {
+            return;
+        }
         batchBuilder.append(eventId).append(context.getString("separator")).append(msg).append("\n");
     }
 

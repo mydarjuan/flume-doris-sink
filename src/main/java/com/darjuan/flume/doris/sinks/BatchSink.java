@@ -2,6 +2,7 @@ package com.darjuan.flume.doris.sinks;
 
 import com.darjuan.flume.doris.service.EventProcess;
 import com.darjuan.flume.doris.service.StreamLoad;
+import org.apache.commons.lang.StringUtils;
 import org.apache.flume.*;
 import org.apache.flume.conf.Configurable;
 import org.apache.flume.sink.AbstractSink;
@@ -81,6 +82,9 @@ public class BatchSink extends AbstractSink implements Configurable, EventProces
      * @throws Exception
      */
     private void flush() throws Exception {
+        if (StringUtils.isEmpty(batchBuilder.toString())) {
+            return;
+        }
         batchBuilder.deleteCharAt(batchBuilder.length() - 1);
         StreamLoad.sink(batchBuilder.toString(), this.context);
         batchBuilder.setLength(0);
