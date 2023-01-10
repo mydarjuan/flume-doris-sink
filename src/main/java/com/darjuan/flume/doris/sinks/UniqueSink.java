@@ -15,12 +15,19 @@ import java.io.UnsupportedEncodingException;
 public class UniqueSink extends BatchSink implements Configurable {
 
     @Override
-    public void eventAppend(Event event) throws UnsupportedEncodingException {
+    public void batchEvent(Event event) throws UnsupportedEncodingException {
         String msg = new String(event.getBody());
         String eventId = getEventId(msg);
         batchBuilder.append(msg).append(context.getString("separator")).append(eventId).append("\n");
     }
 
+    /**
+     * 基于消息生成MD5 ID
+     *
+     * @param msg
+     * @return
+     * @throws UnsupportedEncodingException
+     */
     private String getEventId(String msg) throws UnsupportedEncodingException {
         MD5 md5 = new MD5();
         md5.Update(msg, null);

@@ -49,7 +49,7 @@ public class BatchSink extends AbstractSink implements Configurable, EventProces
                 event = channel.take();
                 if (event != null) {
 
-                    eventAppend(event);
+                    batchEvent(event);
 
                     ++count;
                     // 攒批 batchSize 时提交
@@ -63,6 +63,7 @@ public class BatchSink extends AbstractSink implements Configurable, EventProces
                 if (batchBuilder.length() > 1) {
                     flush();
                 }
+
                 transaction.commit();
                 return status;
             }
@@ -98,7 +99,7 @@ public class BatchSink extends AbstractSink implements Configurable, EventProces
     }
 
     @Override
-    public void eventAppend(Event event) throws UnsupportedEncodingException {
+    public void batchEvent(Event event) throws UnsupportedEncodingException {
         batchBuilder.append(new String(event.getBody())).append("\n");
     }
 }
