@@ -17,7 +17,7 @@ public class UniqueSink extends BatchSink implements Configurable {
     public void batchEvent(Event event) throws UnsupportedEncodingException {
         String msg = new String(event.getBody());
         String eventId = getEventId(msg);
-        batchBuilder.append(msg).append(context.getString("separator")).append(eventId).append("\n");
+        batchBuilder.append(eventId).append(context.getString("separator")).append(msg).append("\n");
     }
 
     /**

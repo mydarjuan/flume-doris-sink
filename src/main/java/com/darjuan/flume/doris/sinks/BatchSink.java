@@ -48,9 +48,7 @@ public class BatchSink extends AbstractSink implements Configurable, EventProces
             while (true) {
                 event = channel.take();
                 if (event != null) {
-
                     batchEvent(event);
-
                     ++count;
                     // 攒批 batchSize 时提交
                     if (count == this.batchSize) {
