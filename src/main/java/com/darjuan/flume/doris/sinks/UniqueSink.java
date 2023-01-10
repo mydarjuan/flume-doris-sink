@@ -1,6 +1,5 @@
 package com.darjuan.flume.doris.sinks;
 
-import com.darjuan.flume.doris.sinks.BatchSink;
 import com.twmacinta.util.MD5;
 import org.apache.flume.*;
 import org.apache.flume.conf.Configurable;
