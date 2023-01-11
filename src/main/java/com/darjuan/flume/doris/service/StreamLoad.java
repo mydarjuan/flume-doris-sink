@@ -78,6 +78,7 @@ public class StreamLoad {
         String columns = context.getString("columns", "");
         String format = context.getString("format", "");
         String jsonPaths = context.getString("jsonPaths", "");
+        String byLine = context.getString("byLine", "true");
         String where = context.getString("where", "");
 
         final String loadUrl = String.format("%s/api/%s/%s/_stream_load", host, database, table);
@@ -89,7 +90,7 @@ public class StreamLoad {
             }
         });
 
-        HttpPut put = builderEntity(loadUrl, data, user, password, mergeType, separator, columns, format, jsonPaths, where);
+        HttpPut put = builderEntity(loadUrl, data, user, password, mergeType, separator, columns, format, jsonPaths, byLine, where);
 
         loadData(loadUrl, httpClientBuilder.build(), put);
     }
@@ -109,7 +110,7 @@ public class StreamLoad {
      * @param where
      * @return
      */
-    private static HttpPut builderEntity(String loadUrl, String data, String user, String pwd, String mergeType, String separator, String columns, String format, String jsonPaths, String where) {
+    private static HttpPut builderEntity(String loadUrl, String data, String user, String pwd, String mergeType, String separator, String columns, String format, String jsonPaths, String byLine, String where) {
         HttpPut put = new HttpPut(loadUrl);
         put.setHeader(HttpHeaders.EXPECT, "100-continue");
         put.setHeader(HttpHeaders.AUTHORIZATION, basicAuthHeader(user, pwd));
@@ -126,10 +127,18 @@ public class StreamLoad {
         if (StringUtils.isNotEmpty(format)) {
             put.setHeader("format", format);
             put.setHeader("jsonpaths", jsonPaths);
+
         }
+        if (StringUtils.isNotEmpty(byLine)) {
+            put.setHeader("read_json_by_line", "true");
+        } else {
+            put.setHeader("strip_outer_array", "true");
+        }
+
         if (StringUtils.isNotEmpty(where)) {
             put.setHeader("where", where);
         }
+        System.out.println(data);
         StringEntity entity = new StringEntity(data, "UTF-8");
         put.setEntity(entity);
 
