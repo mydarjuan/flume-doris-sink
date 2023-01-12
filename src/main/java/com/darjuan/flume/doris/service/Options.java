@@ -1,5 +1,7 @@
 package com.darjuan.flume.doris.service;
 
+import com.google.common.base.Preconditions;
+import org.apache.commons.lang.StringUtils;
 import org.apache.flume.Context;
 
 import java.io.Serializable;
@@ -44,7 +46,7 @@ public class Options implements Serializable {
     }
 
     public String getPassword() {
-        return context.getString(PASSWORD,"");
+        return context.getString(PASSWORD, "");
     }
 
     public String[] getHosts() {
@@ -97,5 +99,16 @@ public class Options implements Serializable {
 
     public String getLabelPrefix() {
         return context.getString(LABEL_PREFIX);
+    }
+
+    public void validateRequired() {
+        final String[] requiredOptionKeys = new String[]{USERNAME, DATABASE, TABLE, PORT, HOSTS};
+        try {
+            for (String requiredOptionKey : requiredOptionKeys) {
+                Preconditions.checkArgument(StringUtils.isNotEmpty(context.getString(requiredOptionKey)), requiredOptionKey + ":不能为空!");
+            }
+        } catch (IllegalArgumentException ex) {
+            System.out.println("初始化配置异常:" + ex.getMessage());
+        }
     }
 }

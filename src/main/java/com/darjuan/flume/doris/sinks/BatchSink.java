@@ -24,7 +24,8 @@ public class BatchSink extends AbstractSink implements Configurable {
     @Override
     public void configure(Context context) {
         System.out.println("初始化配置...");
-        this.options = new Options(context);
+        options = new Options(context);
+        options.validateRequired();
     }
 
     /**
