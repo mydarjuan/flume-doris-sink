@@ -1,6 +1,6 @@
 package com.darjuan.flume.doris.sinks;
 
-import com.darjuan.flume.doris.service.EventProcess;
+import com.darjuan.flume.doris.service.Options;
 import com.darjuan.flume.doris.service.StreamLoad;
 import com.twmacinta.util.MD5;
 import org.apache.commons.lang.StringUtils;
@@ -15,23 +15,16 @@ import java.io.UnsupportedEncodingException;
  * @date 2023-01-08
  * 支持多fe节点, 支持单个，批量，唯一event采集
  */
-public class BatchSink extends AbstractSink implements Configurable, EventProcess {
-    public int batchSize = 10;
+public class BatchSink extends AbstractSink implements Configurable {
     public int batchCount = 0;
-    public int delayInterval = 0;
-    public int uniqueEvent = 0;
-    public Context context;
+    public Options options;
     public StringBuilder batchBuilder = new StringBuilder();
 
-    public BatchSink() {
-    }
 
     @Override
     public void configure(Context context) {
-        this.context = context;
-        this.batchSize = context.getInteger("batchSize", 10);
-        this.delayInterval = context.getInteger("delayInterval", 0);
-        this.uniqueEvent = context.getInteger("uniqueEvent", 0);
+        System.out.println("初始化...");
+        this.options = new Options(context);
     }
 
     /**
@@ -54,7 +47,7 @@ public class BatchSink extends AbstractSink implements Configurable, EventProces
                 if (event != null) {
                     batchEvent(event);
                     // 攒批 batchSize 时提交
-                    if (batchCount == batchSize) {
+                    if (batchCount == options.getBatchSize()) {
                         flushEvent();
                     }
                     continue;
@@ -95,15 +88,13 @@ public class BatchSink extends AbstractSink implements Configurable, EventProces
      * @throws Exception
      */
     private void sinkEvent() throws Exception {
-        StreamLoad.sink(batchBuilder.toString(), this.context);
+        StreamLoad.sink(batchBuilder.toString(), this.options);
     }
 
     /**
      * 前置处理
-     *
-     * @throws InterruptedException
      */
-    private void beforeFlush() throws InterruptedException {
+    private void beforeFlush() {
         batchBuilder.deleteCharAt(batchBuilder.length() - 1);
     }
 
@@ -115,8 +106,8 @@ public class BatchSink extends AbstractSink implements Configurable, EventProces
     private void afterFlush() throws InterruptedException {
         batchBuilder.setLength(0);
         batchCount = 0;
-        if (this.delayInterval > 0) {
-            Thread.sleep(delayInterval);
+        if (this.options.getFlushInterval() > 0) {
+            Thread.sleep(this.options.getFlushInterval());
         }
     }
 
@@ -133,6 +124,27 @@ public class BatchSink extends AbstractSink implements Configurable, EventProces
         return md5.asHex();
     }
 
+    /**
+     * 批量组装消息
+     *
+     * @param event
+     * @throws UnsupportedEncodingException
+     */
+    public void batchEvent(Event event) throws UnsupportedEncodingException {
+        String msg = new String(event.getBody());
+        if (StringUtils.isEmpty(msg)) {
+            return;
+        }
+
+        if (options.getUniqueEvent() > 0) {
+            String eventId = getEventId(msg);
+            batchBuilder.append(eventId).append(options.getSeparator()).append(msg).append("\n");
+        } else {
+            batchBuilder.append(msg).append("\n");
+        }
+        ++batchCount;
+    }
+
     @Override
     public void start() {
         super.start();
@@ -141,21 +153,5 @@ public class BatchSink extends AbstractSink implements Configurable, EventProces
     @Override
     public void stop() {
         super.stop();
-    }
-
-    @Override
-    public void batchEvent(Event event) throws UnsupportedEncodingException {
-        String msg = new String(event.getBody());
-        if (StringUtils.isEmpty(msg)) {
-            return;
-        }
-
-        if (uniqueEvent > 0) {
-            String eventId = getEventId(msg);
-            batchBuilder.append(eventId).append(context.getString("separator")).append(msg).append("\n");
-        } else {
-            batchBuilder.append(msg).append("\n");
-        }
-        ++batchCount;
     }
 }

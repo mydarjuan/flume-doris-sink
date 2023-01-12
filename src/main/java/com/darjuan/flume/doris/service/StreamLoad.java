@@ -2,19 +2,15 @@ package com.darjuan.flume.doris.service;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
-import org.apache.flume.Context;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPut;
-import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultRedirectStrategy;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -39,7 +35,7 @@ public class StreamLoad {
             co.disconnect();
             return true;
         } catch (Exception e1) {
-            e1.printStackTrace();
+            System.out.println("主机:" + host + "链接失败");
             return false;
         }
     }
@@ -47,12 +43,12 @@ public class StreamLoad {
     /**
      * 随机获取fe节点
      *
-     * @param context
+     * @param options
      * @return
      */
-    private static String getLoadHost(Context context) {
-        String[] hostList = context.getString("hosts").split(",");
-        String host = "http://" + hostList[new Random().nextInt(hostList.length)] + ":" + context.getInteger("port", 8030);
+    private static String getLoadHost(Options options) {
+        String[] hostList = options.getHosts();
+        String host = "http://" + hostList[new Random().nextInt(hostList.length)] + ":" + options.getPort();
         if (checkConnection(host)) {
             return host;
         }
@@ -63,35 +59,19 @@ public class StreamLoad {
      * 同步消息
      *
      * @param data
-     * @param context
+     * @param options
      * @throws Exception
      */
-    public static void sink(String data, Context context) throws Exception {
-
-        String host = getLoadHost(context);
-        String user = context.getString("user", "root");
-        String password = context.getString("password", "");
-        String database = context.getString("database");
-        String table = context.getString("table");
-        String mergeType = context.getString("mergeType");
-        String separator = context.getString("separator");
-        String columns = context.getString("columns", "");
-        String format = context.getString("format", "");
-        String jsonPaths = context.getString("jsonPaths", "");
-        String byLine = context.getString("byLine", "true");
-        String where = context.getString("where", "");
-
-        final String loadUrl = String.format("%s/api/%s/%s/_stream_load", host, database, table);
-
+    public static void sink(String data, Options options) throws Exception {
+        String host = getLoadHost(options);
+        final String loadUrl = String.format("%s/api/%s/%s/_stream_load", host, options.getDatabase(), options.getTable());
         final HttpClientBuilder httpClientBuilder = HttpClients.custom().setRedirectStrategy(new DefaultRedirectStrategy() {
             @Override
             protected boolean isRedirectable(String method) {
                 return true;
             }
         });
-
-        HttpPut put = builderEntity(loadUrl, data, user, password, mergeType, separator, columns, format, jsonPaths, byLine, where);
-
+        HttpPut put = builderEntity(loadUrl, data, options);
         loadData(loadUrl, httpClientBuilder.build(), put);
     }
 
@@ -100,43 +80,36 @@ public class StreamLoad {
      *
      * @param loadUrl
      * @param data
-     * @param user
-     * @param pwd
-     * @param mergeType
-     * @param separator
-     * @param columns
-     * @param format
-     * @param jsonPaths
-     * @param where
+     * @param options
      * @return
      */
-    private static HttpPut builderEntity(String loadUrl, String data, String user, String pwd, String mergeType, String separator, String columns, String format, String jsonPaths, String byLine, String where) {
+    private static HttpPut builderEntity(String loadUrl, String data, Options options) {
         HttpPut put = new HttpPut(loadUrl);
         put.setHeader(HttpHeaders.EXPECT, "100-continue");
-        put.setHeader(HttpHeaders.AUTHORIZATION, basicAuthHeader(user, pwd));
-        if (StringUtils.isNotEmpty(mergeType)) {
-            put.setHeader("merge_type", mergeType);
+        put.setHeader(HttpHeaders.AUTHORIZATION, basicAuthHeader(options.getUsername(), options.getPassword()));
+        if (StringUtils.isNotEmpty(options.getMergeType())) {
+            put.setHeader("merge_type", options.getMergeType());
         }
-        put.setHeader("label", UUID.randomUUID().toString() + System.currentTimeMillis());
-        if (StringUtils.isNotEmpty(separator)) {
-            put.setHeader("column_separator", separator);
+        put.setHeader("label", options.getLabelPrefix() + UUID.randomUUID().toString() + System.currentTimeMillis());
+        if (StringUtils.isNotEmpty(options.getSeparator())) {
+            put.setHeader("column_separator", options.getSeparator());
         }
-        if (StringUtils.isNotEmpty(columns)) {
-            put.setHeader("columns", columns);
+        if (StringUtils.isNotEmpty(options.getColumns())) {
+            put.setHeader("columns", options.getColumns());
         }
-        if (StringUtils.isNotEmpty(format)) {
-            put.setHeader("format", format);
-            put.setHeader("jsonpaths", jsonPaths);
+        if (StringUtils.isNotEmpty(options.getRowFormat())) {
+            put.setHeader("format", options.getRowFormat());
+            put.setHeader("jsonpaths", options.getJsonPaths());
 
         }
-        if (StringUtils.isNotEmpty(byLine)) {
+        if (StringUtils.isNotEmpty(options.getRowsOnLine())) {
             put.setHeader("read_json_by_line", "true");
         } else {
             put.setHeader("strip_outer_array", "true");
         }
 
-        if (StringUtils.isNotEmpty(where)) {
-            put.setHeader("where", where);
+        if (StringUtils.isNotEmpty(options.getSqlWhere())) {
+            put.setHeader("where", options.getSqlWhere());
         }
         StringEntity entity = new StringEntity(data, "UTF-8");
         put.setEntity(entity);
@@ -183,5 +156,4 @@ public class StreamLoad {
         byte[] encoded = Base64.encodeBase64(tobeEncode.getBytes(StandardCharsets.UTF_8));
         return "Basic " + new String(encoded);
     }
-
 }
