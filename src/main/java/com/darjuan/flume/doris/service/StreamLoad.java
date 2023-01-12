@@ -138,7 +138,6 @@ public class StreamLoad {
         if (StringUtils.isNotEmpty(where)) {
             put.setHeader("where", where);
         }
-        System.out.println(data);
         StringEntity entity = new StringEntity(data, "UTF-8");
         put.setEntity(entity);
 
