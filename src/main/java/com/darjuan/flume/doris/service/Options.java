@@ -44,7 +44,7 @@ public class Options implements Serializable {
     }
 
     public String getPassword() {
-        return context.getString(PASSWORD);
+        return context.getString(PASSWORD,"");
     }
 
     public String[] getHosts() {
