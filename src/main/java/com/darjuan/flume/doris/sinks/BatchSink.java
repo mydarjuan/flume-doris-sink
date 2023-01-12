@@ -16,10 +16,15 @@ import java.io.UnsupportedEncodingException;
  * 支持多fe节点, 支持单个，批量，唯一event采集
  */
 public class BatchSink extends AbstractSink implements Configurable {
-    public int batchCount = 0;
-    public Options options;
-    public StringBuilder batchBuilder = new StringBuilder();
-
+    /**
+     * 配置
+     */
+    private Options options;
+    /**
+     * 攒批
+     */
+    private int batchCount = 0;
+    private StringBuilder batchBuilder = new StringBuilder();
 
     @Override
     public void configure(Context context) {
