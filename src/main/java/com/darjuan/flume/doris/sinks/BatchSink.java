@@ -63,7 +63,7 @@ public class BatchSink extends AbstractSink implements Configurable {
         } catch (Exception ex) {
             System.out.println("执行异常: " + ex.getMessage());
             transaction.rollback();
-            throw new EventDeliveryException("Failed to deliver event: " + event, ex);
+            throw new EventDeliveryException("消息消费失败: " + event, ex);
         } finally {
             transaction.close();
         }
