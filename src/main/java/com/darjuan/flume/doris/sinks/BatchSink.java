@@ -57,22 +57,26 @@ public class BatchSink extends AbstractSink implements Configurable {
                         flushEvent();
                     }
                     continue;
+                } else {
+                    status = Status.BACKOFF;
                 }
-                // 攒批不满 batchSize 时提交
-                if (batchBuilder.length() > 1) {
-                    flushEvent();
-                }
+
                 transaction.commit();
                 return status;
             }
 
-        } catch (Exception ex) {
-            System.out.println("执行异常: " + ex.getMessage());
+        } catch (Throwable ex) {
             transaction.rollback();
-            throw new EventDeliveryException("消息消费失败: " + event, ex);
+            if (!(ex instanceof ChannelException)) {
+                System.out.println("执行异常: " + ex.getMessage());
+                throw new EventDeliveryException("消息消费失败: " + event, ex);
+            }
+            status = Status.BACKOFF;
         } finally {
             transaction.close();
         }
+
+        return status;
     }
 
     /**
