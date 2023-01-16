@@ -24,7 +24,11 @@ public class BatchSink extends AbstractSink implements Configurable {
      * 攒批
      */
     private int batchCount = 0;
-    private StringBuilder batchBuilder = new StringBuilder();
+
+    /**
+     * 批量消息
+     */
+    private final StringBuilder batchBuilder = new StringBuilder();
 
     @Override
     public void configure(Context context) {
