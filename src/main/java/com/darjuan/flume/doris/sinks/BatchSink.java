@@ -29,6 +29,9 @@ public class BatchSink extends AbstractSink implements Configurable {
      */
     private final StringBuilder batchBuilder = new StringBuilder();
 
+    /**
+     * 计数器
+     */
     private SinkCounter sinkCounter;
 
     @Override
@@ -36,7 +39,6 @@ public class BatchSink extends AbstractSink implements Configurable {
         System.out.println("初始化配置...");
         options = new Options(context);
         options.validateRequired();
-
         if (this.sinkCounter == null) {
             this.sinkCounter = new SinkCounter(this.getName());
         }
