@@ -1,13 +1,16 @@
-flume基于文件信息采集，并通过stread load导入方式，将采集数据，单笔或者攒批 导入doris集群
+### flume doris sink 基本信息介绍
+
+#### flume基于文件信息采集，并通过stread load导入方式，将采集数据，单笔或者攒批 导入doris集群
 
 * 支持多fe负载
 * 支持指定表，字段
 * 支持json格式导入
 * 支持单位时间内微批，攒批
 
-```
-flume 基本配置
 
+#### flume doris sink基本配置参考
+
+```
 a1.sources = r1
 a1.channels = c1
 a1.sinks = k1
@@ -46,4 +49,33 @@ a1.channels.c1.dataDirs = /data/flume/file-channel/data
 a1.sources.r1.channels = c1
 a1.sinks.k1.channel = c1
 
+```
+
+#### 通过supervisor管理并监控flume进程
+```
+[program:flume-unique-ng]
+command=/root/soft/flume-1.7.0/bin/flume-ng agent -c . -f conf/flume-dosris-unique.conf -n a1 -Dflume.root.logger=ALL
+process_name=%(program_name)s
+numprocs=1
+directory=/root/soft/flume-1.7.0
+umask=022
+priority=999
+autostart=true
+autorestart=true
+startsecs=10
+startretries=20
+exitcodes=0,2
+stopsignal=TERM
+stopasgroup=true
+killasgroup=true
+stopwaitsecs=10
+user=root
+redirect_stderr=true
+stdout_logfile=/data/logs/supervisor/%(program_name)s.log
+
+```
+
+#### 手动单节点部署并执行agent
+```
+bin/flume-ng agent -c . -f conf/flume-dosris-unique.conf -n a1 -Dflume.root.logger=ALL
 ```
