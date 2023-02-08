@@ -10,7 +10,7 @@
 
 #### flume doris sink基本配置参考
 
-* taildir 支持单文件，文件组监控
+* taildir source 支持单文件，文件组监控
 * file channel 支持故障续传
 
 ```
