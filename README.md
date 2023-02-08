@@ -1,6 +1,6 @@
 ### flume doris sink 基本信息介绍
 
-#### flume基于文件信息采集，并通过stread load导入方式，将采集数据，单笔或者攒批 导入doris集群
+#### flume基于文件信息采集，并通过stread load导入模式，将采集数据，单笔或者攒批 导入doris集群
 
 * 支持多fe负载
 * 支持指定表，字段
