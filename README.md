@@ -10,6 +10,9 @@
 
 #### flume doris sink基本配置参考
 
+* taildir 支持单位件，文件组监控
+* file channel 支持故障续传
+
 ```
 a1.sources = r1
 a1.channels = c1
@@ -52,6 +55,8 @@ a1.sinks.k1.channel = c1
 ```
 
 #### 通过supervisor管理并监控flume进程
+* 支持进程监控，重启
+
 ```
 [program:flume-unique-ng]
 command=/root/soft/flume-1.7.0/bin/flume-ng agent -c . -f conf/flume-dosris-unique.conf -n a1 -Dflume.root.logger=ALL
