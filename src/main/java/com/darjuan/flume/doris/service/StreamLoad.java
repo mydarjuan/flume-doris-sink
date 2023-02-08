@@ -1,5 +1,6 @@
 package com.darjuan.flume.doris.service;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHeaders;
@@ -64,6 +65,7 @@ public class StreamLoad {
      */
     public static void sink(String data, Options options) throws Exception {
         String host = getLoadHost(options);
+        Preconditions.checkArgument(StringUtils.isNotEmpty(host), "无可用fe节点!");
         final String loadUrl = String.format("%s/api/%s/%s/_stream_load", host, options.getDatabase(), options.getTable());
         final HttpClientBuilder httpClientBuilder = HttpClients.custom().setRedirectStrategy(new DefaultRedirectStrategy() {
             @Override
