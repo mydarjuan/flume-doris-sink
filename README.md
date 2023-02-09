@@ -1,4 +1,4 @@
-### flume for apache doris sink 基本介绍
+###  Apache doris flume sink 基本介绍
 
 #### 基于Apache flume文件信息采集，并通过stream load导入模式，将采集数据，单笔或者攒批 导入doris集群，可适用于用户行为日志，应用错误日志等日志采集场景, 并通过apache doris构建对应场景的olap数据模型，赋能业务.
 
