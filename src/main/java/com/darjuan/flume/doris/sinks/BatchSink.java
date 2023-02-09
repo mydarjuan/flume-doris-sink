@@ -81,6 +81,9 @@ public class BatchSink extends AbstractSink implements Configurable {
             transaction.commit();
             this.sinkCounter.addToEventDrainSuccessCount((long) size);
         } catch (Throwable var10) {
+
+            System.out.println(var10.getMessage());
+
             transaction.rollback();
             if (var10 instanceof Error) {
                 throw (Error) var10;
