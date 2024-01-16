@@ -90,12 +90,12 @@ public class BatchSink extends AbstractSink implements Configurable {
             }
 
             if (!(var10 instanceof ChannelException)) {
+                clearEvents();
                 throw new EventDeliveryException("Failed to send events", var10);
             }
 
             status = Status.BACKOFF;
         } finally {
-            clearEvents();
             transaction.close();
         }
 
