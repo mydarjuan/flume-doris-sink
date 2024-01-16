@@ -27,7 +27,7 @@ public class BatchSink extends AbstractSink implements Configurable {
     /**
      * 批量消息
      */
-    private final StringBuilder batchBuilder = new StringBuilder();
+    private final StringBuilder batchEvents = new StringBuilder();
 
     /**
      * 计数器
@@ -95,6 +95,7 @@ public class BatchSink extends AbstractSink implements Configurable {
 
             status = Status.BACKOFF;
         } finally {
+            clearEvents();
             transaction.close();
         }
 
@@ -120,14 +121,14 @@ public class BatchSink extends AbstractSink implements Configurable {
      * @throws Exception
      */
     private void sinkEvent() throws Exception {
-        StreamLoad.sink(batchBuilder.toString(), this.options);
+        StreamLoad.sink(batchEvents.toString(), this.options);
     }
 
     /**
      * 前置处理
      */
     private void beforeFlush() {
-        batchBuilder.deleteCharAt(batchBuilder.length() - 1);
+        batchEvents.deleteCharAt(batchEvents.length() - 1);
     }
 
     /**
@@ -136,10 +137,17 @@ public class BatchSink extends AbstractSink implements Configurable {
      * @throws InterruptedException
      */
     private void afterFlush() throws InterruptedException {
-        batchBuilder.setLength(0);
+        batchEvents.setLength(0);
         if (this.options.getFlushInterval() > 0) {
             Thread.sleep(this.options.getFlushInterval());
         }
+    }
+
+    /**
+     * 消息清理
+     */
+    private void clearEvents() {
+        batchEvents.setLength(0);
     }
 
     /**
@@ -169,9 +177,9 @@ public class BatchSink extends AbstractSink implements Configurable {
 
         if (options.getUniqueEvent() > 0) {
             String eventId = getEventId(msg);
-            batchBuilder.append(eventId).append(options.getSeparator()).append(msg).append("\n");
+            batchEvents.append(eventId).append(options.getSeparator()).append(msg).append("\n");
         } else {
-            batchBuilder.append(msg).append("\n");
+            batchEvents.append(msg).append("\n");
         }
     }
 
